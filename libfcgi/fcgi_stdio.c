@@ -15,6 +15,8 @@
 #include <stdarg.h> /* for va_arg */
 #include <stdlib.h> /* for malloc */
 #include <string.h> /* for strerror */
+#include <assert.h>
+#include <limits.h>
 
 #include "fcgi_config.h"
 
@@ -57,6 +59,8 @@ extern int pclose(FILE *stream);
 
 #define popen _popen
 #define pclose _pclose
+#define fdopen _fdopen
+#define fileno _fileno
 
 #endif /* _WIN32 */
 
@@ -663,8 +667,10 @@ size_t FCGI_fread(void *ptr, size_t size, size_t nmemb, FCGI_FILE *fp)
         if((size * nmemb) == 0) {
             return 0;
         }
-        n = FCGX_GetStr((char *) ptr, size * nmemb, fp->fcgx_stream);
-        return (n/size);
+        ASSERT(size * nmemb < (size_t)INT_MAX);
+        n = FCGX_GetStr((char *) ptr, (int)(size * nmemb), fp->fcgx_stream);
+        ASSERT(n >= 0);
+        return ((size_t)n/size);
     }
     return (size_t)EOF;
 }
@@ -678,8 +684,10 @@ size_t FCGI_fwrite(void *ptr, size_t size, size_t nmemb, FCGI_FILE *fp)
         if((size * nmemb) == 0) {
             return 0;
         }
-        n = FCGX_PutStr((char *) ptr, size * nmemb, fp->fcgx_stream);
-        return (n/size);
+        ASSERT(size * nmemb < (size_t)INT_MAX);
+        n = (size_t)FCGX_PutStr((char *) ptr, (int)(size * nmemb), fp->fcgx_stream);
+        ASSERT(n >= 0);
+        return ((size_t)n/size);
     }
     return (size_t)EOF;
 }
